@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kognise/water.css@latest/dist/dark.min.css">
+		<title>Websocket Test</title>
+	</head>
+	<body>
+		<div>
+			<input class="roomInput" type="text" placeholder="Room name">
+			<button onclick="joinToRoom()">Join to room</button>
+		</div>
+		<table class="main">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Type</th>
+					<th>Payload</th>
+					<th>Meta</th>
+					<th>Time</th>
+				</tr>
+			</thead>
+			<tbody class="table-body">
+			</tbody>
+		</table>
+
+		<script>
+			function messageHandler(message, send) {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `<td>${send ? '⬆' : '⬇'}</td>
+												 <td><code>${message.type}</code></td>
+												 <td><pre>${message.payload ? JSON.stringify(message.payload, null, 2) : '-'}</pre></td>
+												 <td><pre>${message.meta ? JSON.stringify(message.meta, null, 2) : '-'}</pre></td>
+												 <td><code>${new Date().toISOString()}</code></td>`;
+        return row;
+			}
+		</script>
+
+		<script>
+			const ws = new WebSocket('ws://localhost:8000');
+			const body = document.querySelector('.table-body');
+
+			ws.onmessage = (message) => {
+        const parsedMessage = JSON.parse(message.data);
+        body.prepend(messageHandler(parsedMessage, false));
+      }
+		</script>
+
+		<script>
+			function joinToRoom() {
+			  const roomNameInput = document.querySelector('.roomInput');
+			  const message = {
+			    type: 'JOIN',
+				  meta: {
+			      roomName: roomNameInput.value
+				  }
+			  };
+
+        body.prepend(messageHandler(message, true));
+				ws.send(JSON.stringify(message))
+			}
+		</script>
+	</body>
+</html>

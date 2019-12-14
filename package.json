@@ -1,0 +1,43 @@
+{
+  "name": "flames",
+  "version": "0.0.1",
+  "description": "Core library for creation NodeJS WebSocket server",
+  "main": "dist/index.js",
+  "files": [
+    "lib/"
+  ],
+  "repository": "git@github.com:flamesjs/flames.git",
+  "author": {
+    "name": "Sam Bulatov",
+    "email": "stylesam@yandex.ru",
+    "url": "stylesam.com"
+  },
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --exec node --inspect -r ts-node/register lib/index.ts --watch lib",
+    "test": "jest --watch",
+    "coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "uuid": "3.3.3",
+    "ws": "7.1.2"
+  },
+  "devDependencies": {
+    "@types/jest": "24.0.18",
+    "@types/node": "12.7.4",
+    "@types/uuid": "3.4.6",
+    "@types/ws": "6.0.3",
+    "codelyzer": "5.1.0",
+    "jest": "24.9.0",
+    "nodemon": "1.19.2",
+    "rimraf": "3.0.0",
+    "ts-jest": "24.0.2",
+    "ts-node": "8.3.0",
+    "tslint": "5.19.0",
+    "tslint-config-airbnb": "5.11.2",
+    "typescript": "3.6.2"
+  }
+}

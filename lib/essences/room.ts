@@ -1,44 +1,34 @@
 import { Flame } from './flame'
-import { Emitable, MessageType, RoomState } from '../models'
-import { isEmptyArray } from '../utils'
+import { Namespace } from './namespace'
+import { FlamesController, MessageType, RoomEvent, Sendable } from '../models'
+import { FlamesEventEmitter, isEmptyArray } from '../utils'
 
-export class Room implements Emitable<any> {
-  public state: RoomState = RoomState.open
-  private readonly flames: Flame<any>[] = []
+export class Room extends FlamesEventEmitter<RoomEvent> implements Sendable<any> {
+  private flamesController = new FlamesController(this.namespace)
 
-  constructor(public readonly name: string) {
-    console.log(`Room with name ${this.name} has been open`)
+  constructor(public readonly name: string,
+              private namespace: Namespace) {
+    super()
   }
 
   public join(flame: Flame<any>) {
-    if (!this.flames.includes(flame)) {
-      this.flames.push(flame)
-      console.log(`Flame with ${flame.id} id joined to ${this.name} room`)
-      return
-    }
-
-    return flame.emit(MessageType.info, {
-      info: {
-        type: 'info',
-        code: 0,
-        message: `You already joined to room with name ${this.name}`
-      }
-    })
+    this.emit(RoomEvent.joinFlame, flame)
+    this.flamesController.join(flame)
   }
 
   public leave(flame: Flame<any>) {
-    const i = this.flames.indexOf(flame)
-    this.flames.splice(i, 1)
-    console.log(`Flame with ${flame.id} id leaved from ${this.name} room`)
-    if (isEmptyArray(this.flames)) this.close()
+    this.flamesController.leave(flame)
+
+    if (isEmptyArray(this.flamesController.flames)) {
+      this.close()
+    }
   }
 
-  public emit(type: MessageType, payload?: any) {
-    this.flames.forEach(flame => flame.emit(type, payload))
+  public send(type: MessageType, payload?: any) {
+    this.flamesController.send(type, payload)
   }
 
   public close() {
-    console.log(`Room with name ${this.name} has been closed`)
-    this.state = RoomState.closed
+    this.emit(RoomEvent.close, this)
   }
 }

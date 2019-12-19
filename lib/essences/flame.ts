@@ -1,26 +1,23 @@
 import * as ws from 'ws'
-import { v4 } from 'uuid'
 
-import { carve, deserialize, isEmpty, serializer } from '../utils'
-import { Emitable, InfoMetadata, Message, MessageMetadata, MessageType, RoomState } from '../models'
-import { Room } from './room'
-import { FlamesServer } from '../flames-server'
+import { deserialize, FlamesEventEmitter, isEmpty, serializer } from '../utils'
+import { FlameEvent, InfoMetadata, Message, MessageMetadata, MessageType, RoomsController, Sendable } from '../models'
+import { Namespace } from './namespace'
 
-export class Flame<T> implements Emitable<T | MessageMetadata> {
-  public readonly id: string
-  private rooms: Room[] = []
+export class Flame<T> extends FlamesEventEmitter<FlameEvent> implements Sendable<T | MessageMetadata> {
+  private roomsController = new RoomsController(this.namespace)
 
   constructor(private socket: ws,
-              private server: FlamesServer) {
-    this.emit(MessageType.connected)
+              private namespace: Namespace) {
+    super()
+    this.send(MessageType.connected)
 
     this.socket.on('message', (data: string) => this.onMessage(deserialize(data)))
-    this.id = v4()
+    this.socket.on('close', () => this.onClose())
   }
 
   // TODO: Протипизировать это лучше, так что бы тип `payload` выводился сам в зависимости от `type`
-  public emit(type: MessageType, payload?: T | MessageMetadata) {
-    console.log(type, payload)
+  public send(type: MessageType, payload?: T | MessageMetadata) {
     switch (type) {
       case MessageType.message:
         this.socket.send(serializer({ type, payload }))
@@ -34,51 +31,47 @@ export class Flame<T> implements Emitable<T | MessageMetadata> {
     }
   }
 
-  private onMessage(message: Message<T>) {
-    switch (message.type) {
-      case MessageType.join:
-        this.joinToRoom(message.meta.roomName)
-        break
-      case MessageType.leave:
-        this.leaveFromRoom(message.meta.roomName)
-        break
-      default:
-        break
-    }
-  }
-
-  private joinToRoom(name: string) {
-    const local = this.rooms.find(s => s.name === name)
+  public join(name: string) {
+    const local = this.roomsController.getRoom(name)
 
     if (isEmpty(local)) {
-      const global = this.server.rooms.find(s => s.name === name)
+      const global = this.namespace.getRoom(name)
 
       if (isEmpty(global)) {
-        const room = new Room(name)
+        const room = this.roomsController.addRoom(name)
         room.join(this)
-        this.rooms.push(room)
-        this.server.rooms.push(room)
+        this.roomsController.addRoom(room)
+        this.namespace.addRoom(room)
         return
       }
 
       global.join(this)
-      this.rooms.push(global)
+      this.roomsController.addRoom(global)
       return
     }
 
     return
   }
 
-  private leaveFromRoom(name: string) {
-    const local = this.rooms.find(s => s.name === name)
+  public leave(name: string) {
+    const room = this.roomsController.getRoom(name)
+    room.leave(this)
+  }
 
-    if (!isEmpty(local)) {
-      local.leave(this)
-      carve(local, this.rooms)
+  public close() {
+  }
 
-      if (local.state === RoomState.closed) {
-        carve(local, this.server.rooms)
-      }
+  private onMessage(message: Message<T>) {
+    this.emit(FlameEvent.message, message)
+
+    switch (message.type) {
+      case MessageType.join: return this.join(message.meta.roomName)
+      case MessageType.leave: return this.leave(message.meta.roomName)
+      default: return
     }
+  }
+
+  private onClose() {
+    this.emit(FlameEvent.close, this)
   }
 }

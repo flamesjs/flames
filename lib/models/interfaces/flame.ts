@@ -69,3 +69,8 @@ export interface MessageNotify {
 }
 
 export type MessageMetadata = RoomMetadata | ErrorMetadata | InfoMetadata
+
+export enum FlameEvent {
+  message = 'message',
+  close = 'close'
+}

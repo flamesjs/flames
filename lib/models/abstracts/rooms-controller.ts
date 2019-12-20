@@ -1,6 +1,6 @@
 import { Roomable, RoomEvent } from '../interfaces'
 import { Namespace, Room } from '../../essences'
-import { carve } from '../../utils'
+import { carve, isEmpty } from '../../utils'
 
 export class RoomsController implements Roomable {
   public rooms: Room[] = []
@@ -10,12 +10,16 @@ export class RoomsController implements Roomable {
 
   public addRoom(nameOrRoom: string | Room) {
     if (nameOrRoom instanceof Room) {
+      if (!isEmpty(this.getRoom(nameOrRoom.name))) return
+
       this.rooms.push(nameOrRoom)
       this.eventsHandler(nameOrRoom)
       return nameOrRoom
     }
 
-    const room = new Room(name, this.namespace)
+    if (!isEmpty(this.getRoom(nameOrRoom))) return
+
+    const room = new Room(nameOrRoom, this.namespace)
     this.rooms.push(room)
     this.eventsHandler(room)
     return room

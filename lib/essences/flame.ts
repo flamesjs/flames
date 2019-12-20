@@ -40,7 +40,6 @@ export class Flame<T> extends FlamesEventEmitter<FlameEvent> implements Sendable
       if (isEmpty(global)) {
         const room = this.roomsController.addRoom(name)
         room.join(this)
-        this.roomsController.addRoom(room)
         this.namespace.addRoom(room)
         return
       }

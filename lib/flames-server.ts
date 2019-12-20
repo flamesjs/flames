@@ -14,11 +14,11 @@ export class FlamesServer extends FlamesEventEmitter<FlamesServerEvents> {
     this.config = { ...FLAMES_SERVER_CONFIG_DEFAULTS, ...config }
 
     this.server = new ws.Server(this.config)
-    this.server.on('connection', (ws) => this.onConnection(ws))
+    this.server.on('connection', (ws) => this.emit(FlamesServerEvents.connection, ws))
+    this.on<ws>(FlamesServerEvents.connection, (ws) => this.onConnection(ws))
   }
 
-  private onConnection(payload: ws) {
-    const flame = this.defaultNamespace.addFlame(payload)
-    this.emit(FlamesServerEvents.connection, flame)
+  private onConnection(ws: ws) {
+    this.defaultNamespace.addFlame(ws)
   }
 }

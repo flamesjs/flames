@@ -11,6 +11,7 @@
 		<div>
 			<input class="roomInput" type="text" placeholder="Room name">
 			<button onclick="joinToRoom()">Join to room</button>
+			<button onclick="leaveFromRoom()">Leave to room</button>
 		</div>
 		<table class="main">
 			<thead>
@@ -62,6 +63,19 @@
         body.prepend(messageHandler(message, true));
 				ws.send(JSON.stringify(message))
 			}
+
+      function leaveFromRoom() {
+        const roomNameInput = document.querySelector('.roomInput');
+        const message = {
+          type: 'LEAVE',
+          meta: {
+            roomName: roomNameInput.value
+          }
+        };
+
+        body.prepend(messageHandler(message, true));
+        ws.send(JSON.stringify(message))
+      }
 		</script>
 	</body>
 </html>

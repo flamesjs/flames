@@ -1,29 +1,24 @@
 import * as ws from 'ws'
 
-import { Emitable, FLAME_SERVER_CONFIG_DEFAULTS, FlameServerOptions, MessageType } from './models'
-import { Flame, Room } from './essences'
+import { FLAMES_SERVER_CONFIG_DEFAULTS, FlamesServerEvents, FlameSServerOptions } from './models'
+import { FlamesEventEmitter } from './utils'
+import { Namespace } from './essences'
 
-export class FlamesServer implements Emitable<any> {
-  private readonly config: FlameServerOptions
+export class FlamesServer extends FlamesEventEmitter<FlamesServerEvents> {
+  private readonly config: FlameSServerOptions
   private server: ws.Server
+  private defaultNamespace = new Namespace('/', this)
 
-  private flames: Flame<any>[] = []
-  public rooms: Room[] = []
-
-  constructor(config?: Partial<FlameServerOptions>) {
-    this.config = { ...FLAME_SERVER_CONFIG_DEFAULTS, ...config }
+  constructor(config?: Partial<FlameSServerOptions>) {
+    super()
+    this.config = { ...FLAMES_SERVER_CONFIG_DEFAULTS, ...config }
 
     this.server = new ws.Server(this.config)
-    this.server.on('connection', (ws) => this.addClient(ws))
-    this.server.on('listening', () => this.config.opening())
+    this.server.on('connection', (ws) => this.emit(FlamesServerEvents.connection, ws))
+    this.on<ws>(FlamesServerEvents.connection, (ws) => this.onConnection(ws))
   }
 
-  public emit(type: MessageType, payload?: any) {
-    this.flames.forEach(flame => flame.emit(type, payload))
-  }
-
-  private addClient(socket: ws) {
-    const flame = new Flame(socket, this)
-    this.flames.push(flame)
+  private onConnection(ws: ws) {
+    this.defaultNamespace.addFlame(ws)
   }
 }
